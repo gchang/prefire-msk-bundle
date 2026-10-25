@@ -25,7 +25,12 @@ source bundle_env.sh    # from the bundle root; sets PYTHONPATH to the three sib
 
 ## Software and data
 
-- Python 3.10 with numpy, netcdf4, xarray and tensorflow 2.14 from conda-forge, as in `PREFIRE_MSK/README.md`, and git (to record the code versions in the product).
+- Python 3.10 with tensorflow 2.14, as in `PREFIRE_MSK/README.md`, and git (to record the code versions in the product). `environment.yml` holds the checked conda-forge set:
+
+  ```sh
+  conda env create -f environment.yml
+  ```
+
 - The trained models: `PREFIRE_MSK-larger_ancillary-rev_2025-02-26.zip` (13 MB, MIT) from Zenodo record 17081025 (https://zenodo.org/records/17081025), unzipped inside `PREFIRE_MSK/dist/`, which fills `PREFIRE_MSK/dist/ancillary/` (the code reads the models from there).
 - Inputs per orbit: a PREFIRE 1B-RAD granule and the matching AUX-MET granule from NASA LaRC ASDC (Earthdata login), about 85 to 95 MB together.
 - The final product needs nothing more. The optional browse image needs matplotlib, cartopy, shapely, geopandas and pandas, plus network access for cartopy's Natural Earth coastlines; set `PRD_GEN_BASIC_ONLY=1` to skip the image and the CMR metadata file and run offline.

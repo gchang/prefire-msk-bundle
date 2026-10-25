@@ -1,0 +1,16 @@
+# Conda environment for the PREFIRE 2B-MSK bundle: the conda-forge set the 2026-10-25 check ran with.
+# Create it with: conda env create -f environment.yml
+name: prefire-msk-bundle
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10        # the version PREFIRE_MSK/README.md installs; checked with 3.10
+  - tensorflow=2.14    # the version PREFIRE_MSK/README.md installs and its conda_env.list records; the neural-network models in the Zenodo zip are run with it
+  - numpy              # not pinned; tensorflow 2.14 keeps it below 2.0
+  - netcdf4
+  - xarray
+  - git                # determine_prdgit.py calls git to record the code versions in the product
+  # Left out on purpose: matplotlib, cartopy, shapely, geopandas and pandas. Only the optional browse
+  # image (.nc.jpg) and CMR metadata file of the finalization step use them, and the README's commands
+  # skip that step with PRD_GEN_BASIC_ONLY=1. Add them to make the image; it also downloads Natural
+  # Earth coastlines. geocube and skyfield, named in PREFIRE_PRD_GEN's README, are not used for 2B-MSK.

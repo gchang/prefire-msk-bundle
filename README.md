@@ -25,21 +25,37 @@ source bundle_env.sh    # from the bundle root; sets PYTHONPATH to the three sib
 
 ## Software and data
 
-- Python 3.10 with numpy, netcdf4, xarray and tensorflow 2.14 from conda-forge, as in `PREFIRE_MSK/README.md`.
+- Python 3.10 with numpy, netcdf4, xarray and tensorflow 2.14 from conda-forge, as in `PREFIRE_MSK/README.md`, and git (to record the code versions in the product).
 - The trained models: `PREFIRE_MSK-larger_ancillary-rev_2025-02-26.zip` (13 MB, MIT) from Zenodo record 17081025 (https://zenodo.org/records/17081025), unzipped inside `PREFIRE_MSK/dist/`, which fills `PREFIRE_MSK/dist/ancillary/` (the code reads the models from there).
-- Inputs per orbit: a PREFIRE 1B-RAD granule and the matching AUX-MET granule from NASA LaRC ASDC (Earthdata login).
+- Inputs per orbit: a PREFIRE 1B-RAD granule and the matching AUX-MET granule from NASA LaRC ASDC (Earthdata login), about 85 to 95 MB together.
+- The final product needs nothing more. The optional browse image needs matplotlib, cartopy, shapely, geopandas and pandas, plus network access for cartopy's Natural Earth coastlines; set `PRD_GEN_BASIC_ONLY=1` to skip the image and the CMR metadata file and run offline.
 
 ## Running one orbit
 
-From the bundle root, after `source bundle_env.sh`:
+The mission makes 2B-MSK in two steps: `PREFIRE_MSK` writes a raw file for the whole orbit, then `PREFIRE_PRD_GEN` finalizes it into the archived product (polar latitudes only, with the archive's metadata). From the bundle root:
 
 ```sh
+source bundle_env.sh
+python PREFIRE_MSK/dist/determine_prdgit.py        # records the code versions; produce_L2.py needs it
+python PREFIRE_PRD_GEN/dist/determine_prdgit.py    # the same for the finalization step
+
+# Step 1: cloud mask (writes raw-PREFIRE_SAT1_2B-MSK_R01_P00_20241007075724_01877.nc into OUTPUT_DIR)
 export PACKAGE_TOP_DIR=$PWD/PREFIRE_MSK ANCILLARY_DATA_DIR=$PWD/PREFIRE_MSK/dist/ancillary \
-       OUTPUT_DIR=/path/to/output PRODUCT_FULLVER=R01_P00 \
+       OUTPUT_DIR=/path/to/raw PRODUCT_FULLVER=R01_P00 \
        ATRACK_IDX_RANGE_0BI=ATRACK_IDXRANGE_0BASED_INCLUSIVE:0:END \
        L1B_RAD_FILE=/path/to/PREFIRE_SAT1_1B-RAD_R01_P00_20241007075724_01877.nc \
        AUX_MET_FILE=/path/to/PREFIRE_SAT1_AUX-MET_R01_P00_20241007075724_01877.nc
 python PREFIRE_MSK/dist/produce_L2.py
+
+# Step 2: finalization into the archived product (the output folder must exist)
+mkdir -p /path/to/final
+export MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+export PACKAGE_TOP_DIR=$PWD/PREFIRE_PRD_GEN ANCILLARY_DATA_DIR=$PWD/PREFIRE_PRD_GEN/dist/ancillary \
+       OUTPUT_PRODUCT_DIR=/path/to/final OUTPUT_OPTIONS="" PRD_GEN_BASIC_ONLY=1 \
+       INPUT_FPATH_OR_FPREFIX=/path/to/raw/raw-PREFIRE_SAT1_2B-MSK_R01_P00_20241007075724_01877.nc
+python PREFIRE_PRD_GEN/dist/produce_PRD.py
 ```
 
-The author's own test, `PREFIRE_MSK/test/run.sh`, does the same for two orbits, reading its inputs from `PREFIRE_MSK/test/inputs/`.
+Checked on 2026-10-25 from a fresh `git clone --recurse-submodules` with SAT1 orbit 01877 and SAT2 orbit 02040: the final files match the official ASDC R01 2B-MSK granules in every `cloud_mask` value (52,880 and 63,032 footprints) and in both quality flags. Each orbit takes about 7 s and 0.6 GB for step 1 and about 4 s and 0.2 GB for step 2.
+
+The author's own test, `PREFIRE_MSK/test/run.sh`, runs step 1 for two orbits, reading its inputs from `PREFIRE_MSK/test/inputs/` and calling `determine_prdgit.py` itself.
